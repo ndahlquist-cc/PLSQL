@@ -28,7 +28,10 @@ CREATE TABLE NDMV (
   time_enrolled INTERVAL YEAR(2) TO MONTH
 );
 /
-
+BEGIN
+  NDProcedure();
+END;
+/
 -- This PL/SQL block populates the NDMV table
 CREATE OR REPLACE PROCEDURE NDProcedure IS 
   -- cursor that selects all the required columns from faculty and student tables
@@ -41,7 +44,7 @@ CREATE OR REPLACE PROCEDURE NDProcedure IS
       ON f.f_id = s.f_id;
   cursor_row c%ROWTYPE;
   BEGIN
-    execute immediate 'truncate table NDMV';
+    DELETE FROM NDMV;
     OPEN c;
     LOOP    
       FETCH c INTO cursor_row;
@@ -59,5 +62,4 @@ CREATE OR REPLACE PROCEDURE NDProcedure IS
     END LOOP;
     CLOSE c;  
   END;
-END NDProcedure;
 /
