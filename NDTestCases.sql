@@ -213,6 +213,9 @@ BEGIN
       DBMS_OUTPUT.PUT_LINE('');
   END LOOP;
   CLOSE cursor_output_NDMV;
+EXCEPTION
+  WHEN OTHERS THEN
+  DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
 END;
 /
   

@@ -63,6 +63,9 @@ CREATE OR REPLACE PROCEDURE NDProcedure IS
           cursor_row.s_class, cursor_row.s_dob, cursor_row.s_pin, cursor_row.time_enrolled);             
     END LOOP;
     CLOSE cursor_join_student_faculty;  
+    EXCEPTION
+      WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
   END;
 /
 -- Triggers
@@ -77,6 +80,9 @@ BEGIN
     VALUES(:NEW.f_id, :NEW.f_last, :NEW.f_first, :NEW.f_mi, :NEW.loc_id, 
       :NEW.f_phone, :NEW.f_rank, :NEW.f_super, :NEW.f_pin, NULL, NULL, NULL, 
       NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+EXCEPTION
+    WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
 END;
 /
 -- after update
@@ -91,6 +97,9 @@ BEGIN
     loc_id = :NEW.loc_id, f_phone = :NEW.f_phone, f_rank = :NEW.f_rank, 
     f_super = :NEW.f_super, f_pin = :NEW.f_pin
   WHERE f_id = :OLD.f_id; 
+EXCEPTION
+  WHEN OTHERS THEN
+  DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
 END;
 /
 -- after delete
@@ -101,6 +110,9 @@ FOR EACH ROW
 BEGIN
   DELETE FROM NDMV
     WHERE f_id = :OLD.f_id;
+EXCEPTION
+  WHEN OTHERS THEN
+  DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
 END;
 /
 -- Student
@@ -136,6 +148,9 @@ BEGIN
       :NEW.s_state,:NEW.s_zip, :NEW.s_phone, :NEW.s_class, :NEW.s_dob, 
       :NEW.s_pin, :NEW.time_enrolled);
   CLOSE cursor_insert_get_faculty;
+EXCEPTION
+  WHEN OTHERS THEN
+  DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
 END;
 /
 -- after update
@@ -221,6 +236,9 @@ BEGIN
     WHERE f_id = :OLD.f_id
       AND s_id = :OLD.s_id;
   END IF;
+EXCEPTION
+  WHEN OTHERS THEN
+  DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
 END;
 /
 -- after delete
@@ -244,5 +262,8 @@ BEGIN
     DELETE FROM NDMV
     WHERE s_id = :OLD.s_id;
   END IF;
+EXCEPTION
+  WHEN OTHERS THEN
+  DBMS_OUTPUT.PUT_LINE('An unknown error occured.');
 END;
 /
