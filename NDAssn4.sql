@@ -90,7 +90,7 @@ BEGIN
   SET f_last = :NEW.f_last, f_first = :NEW.f_first, f_mi = :NEW.f_mi, 
     loc_id = :NEW.loc_id, f_phone = :NEW.f_phone, f_rank = :NEW.f_rank, 
     f_super = :NEW.f_super, f_pin = :NEW.f_pin
-  WHERE :NEW.f_id = :OLD.f_id; 
+  WHERE f_id = :OLD.f_id; 
 END;
 /
 -- after delete
@@ -115,7 +115,16 @@ DECLARE
     FROM faculty
     WHERE f_id = :NEW.f_id;
   insert_get_faculty_row cursor_insert_get_faculty%ROWTYPE;
+  rowCount NUMBER:= 0;
 BEGIN
+  SELECT COUNT(*) INTO rowCount 
+  FROM NDMV
+  WHERE f_id = :NEW.f_id
+    AND s_id IS NULL;
+  IF(rowCount = 1 ) THEN
+    DELETE FROM NDMV
+    WHERE f_id = :NEW.f_id;
+  END IF;
   OPEN cursor_insert_get_faculty;
   FETCH cursor_insert_get_faculty INTO insert_get_faculty_row;
   INSERT INTO NDMV
@@ -140,20 +149,67 @@ DECLARE
     FROM faculty
     WHERE f_id = :NEW.f_id;
   update_get_faculty_row cursor_update_get_faculty%ROWTYPE;
+  oldRowCount NUMBER:= 0;
+  newRowCount NUMBER:= 0;
+
 BEGIN
   IF (:OLD.f_id <> :NEW.f_id) THEN
+    SELECT COUNT(*) INTO oldRowCount 
+    FROM NDMV
+    WHERE f_id = :OLD.f_id;
     OPEN cursor_update_get_faculty;
     FETCH cursor_update_get_faculty INTO update_get_faculty_row;
-    UPDATE NDMV
-    SET f_id = :NEW.f_id, f_last = update_get_faculty_row.f_last, 
-      f_first = update_get_faculty_row.f_first, f_mi = update_get_faculty_row.f_mi, 
-      loc_id = update_get_faculty_row.loc_id, f_phone = update_get_faculty_row.f_phone, 
-      f_rank = update_get_faculty_row.f_rank, f_super = update_get_faculty_row.f_super, 
-      f_pin = update_get_faculty_row.f_pin, s_id = :NEW.s_id, s_last = :NEW.s_last, 
-      s_first = :NEW.s_first, s_mi = :NEW.s_mi, s_address = :NEW.s_address, 
-      s_city = :NEW.s_city, s_state = :NEW.s_state, s_zip = :NEW.s_zip, 
-      s_phone = :NEW.s_phone, s_class = :NEW.s_class, s_dob = :NEW.s_dob, 
-      s_pin = :NEW.s_pin, time_enrolled = :NEW.time_enrolled;
+    IF (oldRowCount = 1) THEN
+      UPDATE NDMV
+      SET s_id = NULL, s_last = NULL, s_first = NULL, s_mi = NULL, 
+        s_address = NULL, s_city = NULL, s_state = NULL, s_zip = NULL, 
+        s_phone = NULL, s_class = NULL, s_dob = NULL, s_pin = NULL, 
+        time_enrolled = NULL
+      WHERE f_id = :OLD.f_id;
+      SELECT COUNT(*) INTO newRowCount
+      FROM NDMV
+      WHERE f_id = :NEW.f_id
+        AND s_id IS NULL;
+      IF(newRowCount = 1) THEN
+        UPDATE NDMV
+        SET s_id = :NEW.s_id, s_last = :NEW.s_last, s_first = :NEW.s_first, 
+          s_mi = :NEW.s_mi, s_address = :NEW.s_address, s_city = :NEW.s_city, 
+          s_state = :NEW.s_state, s_zip = :NEW.s_zip, s_phone = :NEW.s_phone, 
+          s_class = :NEW.s_class, s_dob = :NEW.s_dob, s_pin = :NEW.s_pin, 
+          time_enrolled = :NEW.time_enrolled
+        WHERE f_id = :NEW.f_id;
+      ELSIF(newRowCount = 0) THEN
+        INSERT INTO NDMV
+          VALUES (:NEW.f_id, update_get_faculty_row.f_last, update_get_faculty_row.f_first, 
+            update_get_faculty_row.f_mi, update_get_faculty_row.loc_id, 
+            update_get_faculty_row.f_phone, update_get_faculty_row.f_rank, 
+            update_get_faculty_row.f_super, update_get_faculty_row.f_pin, 
+            :NEW.s_id, :NEW.s_last, :NEW.s_first, :NEW.s_mi, :NEW.s_address, 
+            :NEW.s_city, :NEW.s_state, :NEW.s_zip, :NEW.s_phone, :NEW.s_class, 
+            :NEW.s_dob, :NEW.s_pin, :NEW.time_enrolled);
+      END IF;
+    ELSIF(oldRowCount > 1) THEN
+      SELECT COUNT(*) INTO newRowCount
+      FROM NDMV
+      WHERE f_id = :NEW.f_id
+        AND s_id IS NULL;
+      IF(newRowCount = 1) THEN
+        DELETE FROM NDMV
+        WHERE f_id = :NEW.f_id;
+      END IF;
+      UPDATE NDMV
+      SET f_id = :NEW.f_id, f_last = update_get_faculty_row.f_last, 
+        f_first = update_get_faculty_row.f_first, f_mi = update_get_faculty_row.f_mi, 
+        loc_id = update_get_faculty_row.loc_id, f_phone = update_get_faculty_row.f_phone, 
+        f_rank = update_get_faculty_row.f_rank, f_super = update_get_faculty_row.f_super, 
+        f_pin = update_get_faculty_row.f_pin, s_id = :NEW.s_id, s_last = :NEW.s_last, 
+        s_first = :NEW.s_first, s_mi = :NEW.s_mi, s_address = :NEW.s_address, 
+        s_city = :NEW.s_city, s_state = :NEW.s_state, s_zip = :NEW.s_zip, 
+        s_phone = :NEW.s_phone, s_class = :NEW.s_class, s_dob = :NEW.s_dob, 
+        s_pin = :NEW.s_pin, time_enrolled = :NEW.time_enrolled
+     WHERE f_id = :OLD.f_id
+        AND s_id = :OLD.s_id; 
+    END IF;
     CLOSE cursor_update_get_faculty;
   ELSIF (:OLD.f_id = :NEW.f_id) THEN
     UPDATE NDMV
@@ -161,7 +217,9 @@ BEGIN
       s_first = :NEW.s_first, s_mi = :NEW.s_mi, s_address = :NEW.s_address, 
       s_city = :NEW.s_city, s_state = :NEW.s_state, s_zip = :NEW.s_zip, 
       s_phone = :NEW.s_phone, s_class = :NEW.s_class, s_dob = :NEW.s_dob, 
-      s_pin = :NEW.s_pin, time_enrolled = :NEW.time_enrolled;
+      s_pin = :NEW.s_pin, time_enrolled = :NEW.time_enrolled
+    WHERE f_id = :OLD.f_id
+      AND s_id = :OLD.s_id;
   END IF;
 END;
 /
@@ -169,9 +227,22 @@ END;
 CREATE OR REPLACE TRIGGER student_after_delete
 AFTER DELETE ON student
 FOR EACH ROW
---DECLARE
+DECLARE
+  rowCount NUMBER :=0;
 BEGIN  
-  DELETE FROM NDMV
-  WHERE s_id = :OLD.s_id;
+  SELECT COUNT(*) INTO rowCount 
+  FROM NDMV
+  WHERE f_id = :OLD.f_id;
+  IF(rowCount = 1) THEN
+    UPDATE NDMV
+    SET s_id = NULL, s_last = NULL, s_first = NULL, s_mi = NULL,
+      s_address = NULL, s_city = NULL, s_state = NULL, s_zip = NULL, 
+      s_phone = NULL, s_class = NULL, s_dob = NULL, 
+      s_pin = NULL, time_enrolled = NULL
+    WHERE f_id = :OLD.f_id;
+  ELSIF(rowCount > 1) THEN
+    DELETE FROM NDMV
+    WHERE s_id = :OLD.s_id;
+  END IF;
 END;
 /
